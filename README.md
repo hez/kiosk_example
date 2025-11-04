@@ -13,10 +13,8 @@ This is the example kiosk application for followings,
 ```sh
 git clone https://github.com/nerves-web-kiosk/kiosk_example.git
 cd kiosk_example
-export MIX_TARGET=rpi4
-mix deps.get
-mix firmware
-mix burn
+MIX_ENV=prod MIX_TARGET=rpi4 mix do deps.get, compile, assets.deploy, firmware
+MIX_ENV=prod MIX_TARGET=rpi4 mix burn
 ```
 
 Then,
