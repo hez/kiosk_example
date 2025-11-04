@@ -18,12 +18,68 @@ config :nerves, :firmware, rootfs_overlay: "rootfs_overlay"
 
 config :nerves, source_date_epoch: "1721520436"
 
+config :kiosk_example,
+  generators: [timestamp_type: :utc_datetime]
+
+# Configures the endpoint
+config :kiosk_example, KioskExampleWeb.Endpoint,
+  url: [host: "localhost"],
+  adapter: Bandit.PhoenixAdapter,
+  render_errors: [
+    formats: [html: KioskExampleWeb.ErrorHTML, json: KioskExampleWeb.ErrorJSON],
+    layout: false
+  ],
+  pubsub_server: KioskExample.PubSub,
+  live_view: [signing_salt: "TT/yCaKQ"]
+
+# Configures the mailer
+#
+# By default it uses the "Local" adapter which stores the emails
+# locally. You can see the emails in your browser, at "/dev/mailbox".
+#
+# For production it's recommended to configure a different adapter
+# at the `config/runtime.exs`.
+config :kiosk_example, KioskExample.Mailer, adapter: Swoosh.Adapters.Local
+
+# Configure esbuild (the version is required)
+config :esbuild,
+  version: "0.25.4",
+  kiosk_example: [
+    args:
+      ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
+  ]
+
+# Configure tailwind (the version is required)
+config :tailwind,
+  version: "4.1.7",
+  kiosk_example: [
+    args: ~w(
+        --input=assets/css/app.css
+        --output=priv/static/assets/css/app.css
+      ),
+    cd: Path.expand("..", __DIR__)
+  ]
+
 config :mix_tasks_upload_hotswap,
   app_name: :kiosk_example,
   nodes: [:"kiosk_example@nerves.local"],
   cookie: :nerves_is_awesome
 
-import_config "phoenix/config.exs"
+# Configures Elixir's Logger
+config :logger, :console,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id]
+
+# Use Jason for JSON parsing in Phoenix
+config :phoenix, :json_library, Jason
+
+config :kiosk_example, target: Mix.target()
+
+# Import environment specific config. This must remain at the bottom
+# of this file so it overrides the configuration defined above.
+import_config "#{config_env()}.exs"
 
 if Mix.target() == :host do
   import_config "host.exs"
